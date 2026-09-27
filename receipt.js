@@ -1,6 +1,8 @@
 // System #001, quick version: the Time Receipt. An app-like flow, one screen at a time: role →
 // tick your week → print the receipt → one kill plan per screen. Same maths as the Leverage
-// Audit (../audit/audit.js). Runs in the browser; only the email (and role) is ever sent.
+// Audit (vault/audit/audit.js). Runs in the browser; only the email (and role) is ever sent.
+// Deploys on its own: every file it needs sits in this folder. Links back to the Vault use
+// config.js → vaultUrl and hide themselves when it's empty.
 (() => {
   const $ = (s, el = document) => el.querySelector(s);
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'})[c]);
@@ -74,7 +76,7 @@
   // ---- kill plans ------------------------------------------------------------------------
   // trigger → steps → how you check it. Tools are examples; use whatever you already have.
   const VAULT = {
-    check: {name: '#002 Ghost Citation Checker', href: '../check/'},
+    check: {name: '#002 Ghost Citation Checker', path: 'check/'},
   };
   const PLANS = {
     inbox: {trigger: 'A new email arrives.', steps: [
@@ -260,6 +262,20 @@
   };
 
 
+  // ---- links back to the System Vault (config.js → vaultUrl; empty = hidden) --------------------
+  const vaultHref = (path) => {
+    const base = (Vault.cfg.vaultUrl || '').replace(/\/$/, '');
+    if (!base) return '';
+    return `${/^https?:\/\//.test(base) ? base : `https://${base}`}/${path}`;
+  };
+  const wireVaultLinks = () => {
+    for (const a of document.querySelectorAll('[data-vault]')) {
+      const href = vaultHref(a.dataset.vault);
+      if (href) a.setAttribute('href', href); else a.removeAttribute('href');
+    }
+    for (const el of document.querySelectorAll('[data-vault-only]')) el.hidden = !vaultHref('');
+  };
+
   // ---- receipt helpers -------------------------------------------------------------------------
   const weekOf = () => {
     const d = new Date();
@@ -284,7 +300,8 @@
         <p class="small muted">Frees ${h(weeklyMin(r))} h/week · 0 min setup</p>
         <dl><dt>Do this</dt><dd>${p.del ? esc(p.del) : 'Tell whoever it’s for that you’re pausing it, and ask them to say if they miss it. Then wait a month.'}</dd></dl></div>`;
     }
-    const link = p.vault ? `<a href="${VAULT[p.vault].href}">${esc(VAULT[p.vault].name)}</a>` : '';
+    const href = p.vault && vaultHref(VAULT[p.vault].path);
+    const link = p.vault ? (href ? `<a href="${href}">${esc(VAULT[p.vault].name)}</a>` : `the ${esc(VAULT[p.vault].name)} in the System Vault`) : '';
     return `<div class="recipe">
       <h4>${esc(r.name)} <span class="stamp ${V[v][1]}">${V[v][0]}</span></h4>
       <p class="small muted">${v === 'machine' ? `Saves ${h(savedWeeklyMin(r))} h/week · setup ~${buildText(buildH(r))} (a guess) · pays back in ${weeksText(paybackWeeks(r))}` : `AI drafts, you check. ${h(weeklyMin(r))} h/week today.`}</p>
@@ -321,7 +338,7 @@
       '- Automations draft; you send. Never let one reply, pay or delete on its own at first.',
       '- If it needs more upkeep than it saves, delete it.',
       '- Setup times are rough guesses. Check your company’s rules before connecting work accounts or AI tools.', '',
-      `More systems: ${Vault.siteUrl() || 'the System Vault'}`, '',
+      `More systems: ${vaultHref('') || 'the System Vault'}`, '',
     ].join('\n');
   };
   const downloadPlan = () => Vault.download('my-time-receipt-plan.md', planMd(summary()));
@@ -616,10 +633,11 @@
           <button class="btn alt block" type="button" data-dl>⬇ Download my plan (.md)</button>
           <div class="pair" style="margin-top:10px">
             <button class="btn ghost small" type="button" data-share>Share my receipt</button>
-            <a class="btn ghost small" href="../">More free systems</a>
+            ${vaultHref('') ? `<a class="btn ghost small" href="${vaultHref('')}">More free systems</a>` : '<button class="btn ghost small" type="button" data-restart>Start over</button>'}
           </div>
         </div>`);
       on(el, '[data-dl]', downloadPlan);
+      on(el, '[data-restart]', () => go('role', -1));
       on(el, '[data-share]', share);
       el.enter = () => {
         pop($('.big-stat', el), 150);
@@ -826,11 +844,11 @@
 
     // call to action under the paper
     center('Print yours free', 1760, F(900, 48, 'Montserrat, system-ui, sans-serif'));
-    center(Vault.siteUrl() ? `${Vault.siteUrl()}/receipt` : `comment RECEIPT on ${Vault.cfg.handle || '@null_grind'}`, 1825, F(700, 34, 'Montserrat, system-ui, sans-serif'));
+    center(Vault.cfg.siteUrl ? Vault.siteUrl() : `comment RECEIPT on ${Vault.cfg.handle || '@null_grind'}`, 1825, F(700, 34, 'Montserrat, system-ui, sans-serif'));
   };
   const shareText = () => {
     const s = summary();
-    return `My week's receipt: ${h(s.busyMin)} h of busywork a week, ${perYear(s.busyMin)} h a year. Print yours (free, 2 min)${Vault.siteUrl() ? `: https://${Vault.siteUrl()}/receipt/` : ''} · by ${Vault.cfg.handle || '@null_grind'}`;
+    return `My week's receipt: ${h(s.busyMin)} h of busywork a week, ${perYear(s.busyMin)} h a year. Print yours (free, 2 min)${Vault.cfg.siteUrl ? `: https://${Vault.siteUrl()}/` : ''} · by ${Vault.cfg.handle || '@null_grind'}`;
   };
   const share = async () => {
     await document.fonts?.ready;
@@ -873,6 +891,7 @@
       extra: () => ({role: state.role || ''}),
       onUnlock: () => { if (submitted && current?.name === 'gate') go('kill:1', 1); },
     });
+    wireVaultLinks();
     go('intro');
   });
 })();
