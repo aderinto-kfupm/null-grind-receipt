@@ -8,12 +8,12 @@
   <meta property="og:title" content="The Time Receipt · @null_grind">
   <meta property="og:description" content="Print the receipt for your week: every hour you're paying for work a machine should do. 2 minutes, free, no sign-up.">
   <meta name="theme-color" content="#FAFAFA">
-  <link rel="icon" href="../assets/favicon.png" type="image/png">
-  <link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
+  <link rel="icon" href="favicon.png" type="image/png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../assets/vault.css">
+  <link rel="stylesheet" href="vault.css">
   <style>
     /* ---------- app shell: one screen at a time, sized to the device ---------- */
     html, body { height: 100%; }
@@ -192,14 +192,14 @@
       .bar span { transition: none; }
     }
   </style>
-  <script src="../config.js"></script>
-  <script src="../assets/vault.js"></script>
+  <script src="config.js"></script>
+  <script src="vault.js"></script>
 </head>
 <body>
   <div class="shell">
     <header class="appbar">
       <button class="icon-btn gone" type="button" id="back" aria-label="Back">←</button>
-      <a class="logo" href="../" aria-label="The System Vault"><img class="logo-mark" src="../assets/me.jpg" alt="" width="36" height="36"><span data-handle>@null_grind</span></a>
+      <a class="logo" data-vault="" aria-label="The System Vault"><img class="logo-mark" src="me.jpg" alt="" width="36" height="36"><span data-handle>@null_grind</span></a>
       <button class="icon-btn" type="button" id="how-open" aria-haspopup="dialog" aria-label="How the receipt works">?</button>
     </header>
     <div class="bar" aria-hidden="true"><span id="progress"></span></div>
@@ -232,7 +232,7 @@
       <dt><span class="stamp s-human">Human</span></dt><dd>Needs you (or happens too rarely). Not counted.</dd>
     </dl>
     <p class="small"><b>Per year</b> = per week × 52 · <b>Work weeks</b> = ÷ 40 h · <b>Kill first</b> = the fastest payback on setup time.</p>
-    <p class="small muted"><b>Limits.</b> Default times are rough guesses, so change them. A MACHINE stamp means a task <em>fits</em> automation, not that your company allows it. Want more control? Try the <a href="../audit/">Leverage Audit</a>. Nothing you tick leaves your browser.</p>
+    <p class="small muted"><b>Limits.</b> Default times are rough guesses, so change them. A MACHINE stamp means a task <em>fits</em> automation, not that your company allows it. <span data-vault-only>Want more control? Try the <a data-vault="audit/">Leverage Audit</a>. </span>Nothing you tick leaves your browser.</p>
     <button class="btn block" type="button" data-close>Got it</button>
   </dialog>
 
