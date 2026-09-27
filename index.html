@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>The Time Receipt</title>
+  <meta name="description" content="Tick what fills your week. Get a receipt for every hour you're spending on work a machine should do, and the first task to kill. 2 minutes, free.">
+  <meta property="og:title" content="The Time Receipt · @null_grind">
+  <meta property="og:description" content="Print the receipt for your week: every hour you're paying for work a machine should do. 2 minutes, free, no sign-up.">
+  <meta name="theme-color" content="#FAFAFA">
+  <link rel="icon" href="../assets/favicon.png" type="image/png">
+  <link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/vault.css">
+  <style>
+    /* ---------- app shell: one screen at a time, sized to the device ---------- */
+    html, body { height: 100%; }
+    body { overflow: hidden; }
+    .shell { position: relative; height: 100vh; height: 100dvh; max-width: 520px; margin: 0 auto; display: flex; flex-direction: column; background: var(--bg); }
+    @media (min-width: 620px) and (min-height: 720px) {
+      body {
+        display: grid; place-items: center;
+        background: var(--accent) radial-gradient(rgba(30, 30, 30, .16) 1.5px, transparent 1.6px) 0 0 / 22px 22px;
+      }
+      .shell { width: 440px; height: min(860px, calc(100dvh - 56px)); border: 4px solid var(--ink); box-shadow: 12px 12px 0 var(--ink); }
+    }
+
+    .appbar { display: flex; align-items: center; gap: 10px; padding: 12px 16px 10px; }
+    .appbar .logo { flex: 1; min-width: 0; text-decoration: none; }
+    .logo-mark { width: 36px; height: 36px; }
+    .icon-btn {
+      width: 38px; height: 38px; flex-shrink: 0; display: grid; place-items: center; cursor: pointer;
+      font: inherit; font-weight: 900; font-size: 17px; color: var(--ink); background: var(--card);
+      border: 3px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); transition: transform .08s, box-shadow .08s, opacity .2s;
+    }
+    .icon-btn:active { transform: translate(3px, 3px); box-shadow: none; }
+    .icon-btn.gone { opacity: 0; pointer-events: none; }
+    .bar { height: 5px; margin: 0 16px; background: var(--line); }
+    .bar span { display: block; height: 100%; width: 0; background: var(--ink); transition: width .45s cubic-bezier(.2, .8, .2, 1); }
+
+    .stage { position: relative; flex: 1; min-height: 0; overflow: hidden; }
+    .screen { position: absolute; inset: 0; display: flex; flex-direction: column; background: var(--bg); }
+    .screen-body { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 22px 16px 26px; }
+    .screen-foot { padding: 12px 16px calc(14px + env(safe-area-inset-bottom)); border-top: 3px solid var(--line); background: var(--bg); }
+    .screen-foot.dark { background: var(--ink); color: var(--bg); border-top: 0; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .screen-foot.dark .btn { box-shadow: 4px 4px 0 var(--accent-alt); border-color: var(--bg); white-space: nowrap; }
+    .screen-foot .pair { display: flex; gap: 10px; }
+    .screen-foot .pair .btn { flex: 1; }
+    .center { display: flex; flex-direction: column; justify-content: center; text-align: center; }
+    .screen h2 { margin: 0 0 10px; font-size: clamp(26px, 7.4vw, 32px); }
+    .kicker { font-weight: 900; font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+    .btn.big { font-size: 20px; padding: 16px 20px; }
+    .btn.pulse { animation: breathe 2.4s ease-in-out 2.2s infinite; }
+    @keyframes breathe { 50% { transform: translate(-2px, -2px); box-shadow: 7px 7px 0 var(--ink); } }
+    .linkish { font: inherit; font-size: 14px; font-weight: 700; background: none; border: 0; padding: 6px 0; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; color: var(--muted); }
+    .foot-note { text-align: center; font-size: 13px; color: var(--muted); margin: 8px 0 0; }
+    .foot-note b { color: var(--ink); }
+
+    /* ---------- intro ---------- */
+    .scr-intro h1 { font-size: clamp(40px, 12vw, 54px); margin: 14px 0 12px; }
+    .scr-intro h1 .w { display: inline-block; }
+    .scr-intro .lead { font-size: 18px; }
+    .scr-intro .meta-row { justify-content: center; }
+    .mini { width: 170px; margin: 0 auto 18px; }
+    .mini-slot { height: 14px; background: var(--ink); border-radius: 6px 6px 0 0; }
+    .mini-wrap { overflow: hidden; margin: 0 12px; filter: drop-shadow(5px 5px 0 var(--accent)); }
+    .mini-paper {
+      --zig: 7px; background: #fff; padding: 14px 12px calc(16px + var(--zig)); display: grid; gap: 8px; text-align: left;
+      -webkit-mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) 50% / calc(var(--zig) * 2) 100%;
+              mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) 50% / calc(var(--zig) * 2) 100%;
+    }
+    .mini-paper i { display: block; height: 6px; background: var(--line); transform-origin: left; }
+    .mini-paper i.s { width: 55%; }
+    .mini-paper b { justify-self: end; font-family: var(--mono); font-size: 22px; font-weight: 800; background: var(--accent); padding: 0 6px; margin-top: 4px; }
+
+    /* ---------- role ---------- */
+    .roles-pick { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 18px 0 0; }
+    .roles-pick button {
+      position: relative; font: inherit; font-weight: 800; text-align: left; cursor: pointer; background: var(--card); color: var(--ink);
+      border: 4px solid var(--ink); padding: 14px; line-height: 1.25; min-height: 96px; transition: transform .1s, box-shadow .1s, background .15s;
+    }
+    .roles-pick button:hover { transform: translate(-2px, -2px); box-shadow: 4px 4px 0 var(--ink); }
+    .roles-pick button:active { transform: none; box-shadow: none; }
+    .roles-pick button small { display: block; font-weight: 500; color: var(--muted); font-size: 13px; margin-top: 4px; }
+    .roles-pick button[aria-pressed="true"] { background: var(--accent); box-shadow: 4px 4px 0 var(--ink); }
+    .roles-pick button[aria-pressed="true"] small { color: var(--ink); }
+    .roles-pick .tick { position: absolute; top: 8px; right: 8px; width: 24px; height: 24px; display: none; place-items: center; background: var(--ink); color: var(--accent-alt); font-size: 14px; }
+    .roles-pick button[aria-pressed="true"] .tick { display: grid; }
+
+    /* ---------- tasks ---------- */
+    .rows { margin: 16px 0; border-top: 3px solid var(--ink); }
+    .row { border-bottom: 2px solid var(--line); padding: 12px 2px; transition: background .15s, padding .15s, box-shadow .15s; }
+    .row.on { background: var(--card); box-shadow: inset 6px 0 0 var(--accent); padding-left: 14px; }
+    .row-main { display: flex; align-items: center; gap: 12px; cursor: pointer; }
+    .row-main input[type=checkbox] { width: 24px; height: 24px; accent-color: var(--ink); flex-shrink: 0; margin: 0; cursor: pointer; }
+    .row-name { flex: 1; min-width: 0; font-weight: 800; line-height: 1.3; }
+    .row:not(.on) .row-name { color: var(--muted); font-weight: 700; }
+    .row-name input { width: 100%; font: inherit; font-weight: 800; border: 0; border-bottom: 3px solid var(--line); padding: 2px; background: transparent; color: var(--ink); }
+    .row-name input:focus { border-bottom-color: var(--ink); outline: none; }
+    .row-more { margin: 10px 0 2px 36px; }
+    .row:not(.on) .row-more { display: none; }
+    .nums { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-weight: 700; font-size: 15px; }
+    .nums select, .nums input { font: inherit; font-weight: 800; color: var(--ink); border: 3px solid var(--ink); background: var(--bg); padding: 5px 6px; }
+    .nums select { max-width: 170px; }
+    .nums input { width: 66px; }
+    .nums .per { font-weight: 900; }
+    .why-btn { font: inherit; font-size: 14px; font-weight: 700; background: none; border: 0; padding: 4px 0; margin-top: 6px; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; color: var(--muted); }
+    .why .note { font-size: 13px; color: var(--muted); margin: 6px 0; }
+    .q { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; padding: 8px 0; border-top: 2px solid var(--line); font-size: 14px; }
+    .q .yn { display: flex; }
+    .q .yn button { font: inherit; font-weight: 800; font-size: 13px; border: 3px solid var(--ink); background: var(--card); color: var(--ink); padding: 4px 10px; cursor: pointer; min-width: 46px; }
+    .q .yn button + button { border-left: 0; }
+    .q .yn button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+    .q.auto { color: var(--muted); }
+    .q.auto b { font-size: 13px; padding: 3px 8px; border: 3px solid var(--line); }
+    .rm { font: inherit; font-weight: 900; border: 3px solid var(--ink); background: var(--card); color: var(--ink); width: 32px; height: 32px; cursor: pointer; flex-shrink: 0; }
+    .tally { font-weight: 800; font-size: 14px; line-height: 1.3; }
+    .tally b { font-size: 22px; font-weight: 900; }
+
+    .stamp { display: inline-block; flex-shrink: 0; font-weight: 900; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; padding: 2px 7px; border: 3px solid var(--ink); white-space: nowrap; }
+    .s-machine { background: var(--accent); }
+    .s-pipe { background: var(--accent-alt); }
+    .s-delete { background: var(--danger-soft); }
+    .s-human, .s-rare { background: #efefef; }
+    .s-pending { background: var(--card); border-style: dashed; color: var(--muted); }
+
+    /* ---------- the receipt ---------- */
+    .printer { max-width: 380px; margin: 0 auto; }
+    .slot { height: 18px; background: var(--ink); border-radius: 6px 6px 0 0; position: relative; }
+    .slot::after { content: ''; position: absolute; left: 12px; right: 12px; bottom: 4px; height: 4px; background: #000; border-radius: 2px; }
+    .paper-wrap { overflow: hidden; margin: 0 14px; filter: drop-shadow(5px 5px 0 var(--ink)); }
+    .receipt {
+      --zig: 10px; background: #fff; color: #1e1e1e; font-family: var(--mono); font-size: 13px; line-height: 1.45;
+      padding: 20px 16px calc(20px + var(--zig));
+      -webkit-mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) 50% / calc(var(--zig) * 2) 100%;
+              mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) 50% / calc(var(--zig) * 2) 100%;
+    }
+    .r-c { text-align: center; }
+    .r-brand { font-family: Montserrat, system-ui, sans-serif; font-weight: 900; font-size: 20px; letter-spacing: 1px; }
+    .r-title { font-weight: 700; letter-spacing: 3px; }
+    .r-dim { color: #6b6b6b; }
+    .r-rule { border-top: 2px dashed #1e1e1e; margin: 12px 0; }
+    .r-row { display: grid; grid-template-columns: 1fr auto auto; gap: 8px; align-items: baseline; padding: 2px 0; }
+    .r-row .n { min-width: 0; overflow-wrap: anywhere; }
+    .r-row .h { text-align: right; min-width: 50px; white-space: nowrap; }
+    .r-row .v { font-weight: 700; min-width: 68px; text-align: right; }
+    .r-row .v.machine { text-decoration: line-through; text-decoration-thickness: 2px; }
+    .r-sum { display: flex; justify-content: space-between; gap: 8px; }
+    .r-total { font-size: 17px; font-weight: 700; padding: 6px 0; }
+    .r-total span:last-child { background: var(--accent); padding: 0 6px; }
+    .r-kill { border: 2px solid #1e1e1e; padding: 10px; margin-top: 12px; }
+    .r-kill b { background: var(--accent-alt); padding: 0 4px; }
+    .barcode { height: 44px; margin: 16px 12px 6px; background: repeating-linear-gradient(90deg, #1e1e1e 0 2px, transparent 2px 4px, #1e1e1e 4px 7px, transparent 7px 8px, #1e1e1e 8px 9px, transparent 9px 13px); }
+    .r-thanks { font-weight: 700; letter-spacing: 1px; }
+
+    /* ---------- kill cards ---------- */
+    .kill-top { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+    .slide-no { display: inline-block; font-size: 46px; font-weight: 900; line-height: 1; letter-spacing: -1px; background: var(--accent); padding: 4px 10px; border: 4px solid var(--ink); box-shadow: 4px 4px 0 var(--ink); }
+    .kill-top .kicker { margin: 0; }
+    .recipe h4 { margin: 0 0 6px; font-size: 22px; font-weight: 900; line-height: 1.2; }
+    .recipe h4 .stamp { vertical-align: middle; }
+    .recipe dl { margin: 14px 0 0; display: grid; grid-template-columns: auto 1fr; gap: 8px 12px; font-size: 15px; }
+    .recipe dt { font-weight: 900; font-size: 12px; letter-spacing: 1px; text-transform: uppercase; padding-top: 3px; }
+    .recipe dd { margin: 0; }
+    .recipe ol { margin: 0; padding-left: 20px; }
+    .recipe li { margin-bottom: 4px; }
+    .tip { border-left: 6px solid var(--accent-alt); padding: 6px 0 6px 12px; margin: 18px 0 0; font-size: 14px; font-weight: 700; }
+
+    /* ---------- gate + done ---------- */
+    .screen .gate { text-align: left; margin: 18px 0 0; }
+    .big-stat { display: inline-block; font-size: clamp(56px, 18vw, 80px); font-weight: 900; line-height: 1; letter-spacing: -2px; margin: 10px auto 4px; background: var(--accent-alt); padding: 4px 14px; border: 4px solid var(--ink); box-shadow: 6px 6px 0 var(--ink); }
+
+    /* ---------- dialogs ---------- */
+    .dlg {
+      width: min(440px, calc(100% - 32px)); max-height: calc(100% - 48px); overflow: auto; padding: 22px;
+      border: 4px solid var(--ink); background: var(--card); color: var(--ink); box-shadow: 8px 8px 0 var(--accent);
+    }
+    .dlg::backdrop { background: rgba(30, 30, 30, 0.55); }
+    .dlg[open] { animation: pop .2s cubic-bezier(.2, .8, .2, 1); }
+    @keyframes pop { from { transform: translateY(14px) scale(.98); opacity: 0; } }
+    .dlg-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 10px; }
+    .dlg-head h2 { margin: 0; font-size: 24px; }
+    .legend { display: grid; grid-template-columns: auto 1fr; gap: 10px 12px; align-items: baseline; margin: 14px 0; font-size: 14px; }
+    .legend dd { margin: 0; }
+    #share-canvas { width: 100%; max-width: 240px; border: 4px solid var(--ink); display: block; margin: 4px auto 14px; }
+
+    [hidden] { display: none !important; }
+    @media (prefers-reduced-motion: reduce) {
+      .btn.pulse, .dlg[open] { animation: none; }
+      .bar span { transition: none; }
+    }
+  </style>
+  <script src="../config.js"></script>
+  <script src="../assets/vault.js"></script>
+</head>
+<body>
+  <div class="shell">
+    <header class="appbar">
+      <button class="icon-btn gone" type="button" id="back" aria-label="Back">←</button>
+      <a class="logo" href="../" aria-label="The System Vault"><img class="logo-mark" src="../assets/me.jpg" alt="" width="36" height="36"><span data-handle>@null_grind</span></a>
+      <button class="icon-btn" type="button" id="how-open" aria-haspopup="dialog" aria-label="How the receipt works">?</button>
+    </header>
+    <div class="bar" aria-hidden="true"><span id="progress"></span></div>
+    <main class="stage" id="stage" aria-live="polite"></main>
+  </div>
+
+  <!-- The email form lives here so the Vault gate can bind to it on load; the gate screen borrows it. -->
+  <div id="gate-home" hidden>
+    <div class="gate" id="gate">
+      <form data-gate="receipt" novalidate>
+        <label class="sr-only" for="rc-email">Email</label>
+        <input id="rc-email" type="email" name="email" placeholder="you@work.com" autocomplete="email" required>
+        <button class="btn alt" type="submit">Unlock my next kills</button>
+      </form>
+      <p class="err" aria-live="polite"></p>
+      <p class="fine">One email when a new system drops. No hype roundups. Unsubscribe anytime.</p>
+    </div>
+  </div>
+
+  <dialog class="dlg" id="how" aria-labelledby="how-title">
+    <div class="dlg-head">
+      <h2 id="how-title">How the receipt works</h2>
+      <button class="rm" type="button" data-close aria-label="Close">×</button>
+    </div>
+    <p class="small">Every task goes through the <b>3-question test</b>: does it happen every week, does it start the same way every time, and would you catch a mistake in under a minute?</p>
+    <dl class="legend">
+      <dt><span class="stamp s-machine">Machine</span></dt><dd>Passes all three. Counts the time saved, minus 1 min per run to check it.</dd>
+      <dt><span class="stamp s-delete">Delete</span></dt><dd>Nobody would notice if you stopped. All of its time counts.</dd>
+      <dt><span class="stamp s-pipe">Pipe it</span></dt><dd>AI drafts, you check. Shown, but not in the total.</dd>
+      <dt><span class="stamp s-human">Human</span></dt><dd>Needs you (or happens too rarely). Not counted.</dd>
+    </dl>
+    <p class="small"><b>Per year</b> = per week × 52 · <b>Work weeks</b> = ÷ 40 h · <b>Kill first</b> = the fastest payback on setup time.</p>
+    <p class="small muted"><b>Limits.</b> Default times are rough guesses, so change them. A MACHINE stamp means a task <em>fits</em> automation, not that your company allows it. Want more control? Try the <a href="../audit/">Leverage Audit</a>. Nothing you tick leaves your browser.</p>
+    <button class="btn block" type="button" data-close>Got it</button>
+  </dialog>
+
+  <dialog class="dlg" id="share-dlg" aria-labelledby="share-title">
+    <div class="dlg-head">
+      <h2 id="share-title">Share your receipt</h2>
+      <button class="rm" type="button" data-close aria-label="Close">×</button>
+    </div>
+    <canvas id="share-canvas" width="1080" height="1920" aria-label="Your receipt as an image"></canvas>
+    <div class="pair" style="display:flex; gap:10px">
+      <button class="btn small" type="button" id="dl" style="flex:1">⬇ Save image</button>
+      <button class="btn ghost small" type="button" id="copy" style="flex:1">Copy caption</button>
+    </div>
+  </dialog>
+
+  <script src="receipt.js"></script>
+</body>
+</html>
